@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14141f">
+<meta name="description" content="درسیار — تایمر مطالعه، استریک و آمار درس‌خواندن. رایگان، فارسی، بدون ثبت‌نام.">
+<title>درسیار</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<style>
+:root {
+  --bg: #12121c; --card: #1c1c2b; --card2: #24243a; --line: #2f2f4a;
+  --text: #f2f2f7; --dim: #9a9ab5; --accent: #ff6b6b; --break: #4ade80; --gold: #fbbf24;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: radial-gradient(1200px 600px at 80% -10%, #2a1f3d 0%, transparent 60%), var(--bg);
+  color: var(--text); min-height: 100vh; line-height: 1.7;
+  font-family: Vazirmatn, Vazir, Tahoma, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1040px; margin: 0 auto; padding: 24px 16px 40px; }
+header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+h1 { margin: 0; font-size: 30px; }
+h1 span { color: var(--accent); }
+.dim, .date { color: var(--dim); }
+.grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; min-width: 0; }
+.card h2 { margin: 0 0 12px; font-size: 15px; color: var(--dim); font-weight: 600; }
+.card h2.mt { margin-top: 22px; }
+.span2 { grid-column: 1 / -1; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+.timer-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mode { font-weight: 700; color: var(--accent); }
+.mode.break { color: var(--break); }
+.ring-wrap { position: relative; width: min(260px, 70vw); aspect-ratio: 1; margin: 6px 0 16px; }
+.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--card2); stroke-width: 12; }
+.ring-fg { fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .3s; }
+.ring-fg.break { stroke: var(--break); }
+.ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 30px; }
+#timeText { font-size: clamp(42px, 11vw, 58px); font-weight: 800; direction: ltr; unicode-bidi: isolate; }
+#subjectText { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 12px; }
+.chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--card2); overflow: hidden; }
+.chip.active { border-color: var(--accent); background: #3a2233; }
+.chip button { background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; }
+.chip .pick { padding: 5px 12px; display: flex; align-items: center; gap: 6px; }
+.chip .del { color: var(--dim); padding: 5px 6px 5px 10px; }
+.chip .del:hover { color: #ff8a8a; }
+.chip button:disabled { cursor: not-allowed; opacity: .55; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+.add-row { display: flex; gap: 8px; width: 100%; max-width: 360px; margin-bottom: 14px; }
+input[type=text], input[type=number] {
+  flex: 1; min-width: 0; background: var(--card2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 10px; padding: 8px 12px; font: inherit;
+}
+input:focus { outline: none; border-color: var(--accent); }
+.btn {
+  background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 12px;
+  padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.btn:hover { background: #2e2e4a; }
+.btn.primary { background: linear-gradient(90deg, #ff8a65, #ff5c7a); color: #15151f; border: 0; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: #ff8a8a; }
+#startBtn { min-width: 130px; }
+.buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hint { color: #6c6c88; font-size: 12px; margin: 12px 0 0; }
+
+.big { font-size: 34px; font-weight: 800; }
+.bar { height: 12px; background: var(--card2); border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
+.bar > div { height: 100%; width: 0; background: linear-gradient(90deg, #ff8a65, #ff5c7a); border-radius: 999px; transition: width .4s; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.stat { background: var(--card2); border-radius: 14px; padding: 12px 6px; text-align: center; }
+.stat b { display: block; font-size: 24px; }
+.stat span { color: var(--dim); font-size: 12px; }
+
+.wk-row { display: grid; grid-template-columns: minmax(70px, 110px) 1fr auto; align-items: center; gap: 10px; margin: 8px 0; }
+.wk-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-track { height: 10px; background: var(--card2); border-radius: 999px; overflow: hidden; }
+.wk-bar { height: 100%; border-radius: 999px; }
+.wk-val { color: var(--dim); font-size: 13px; white-space: nowrap; }
+
+.heat-wrap { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.heat-labels, .heatmap { display: grid; grid-template-rows: repeat(7, 18px); gap: 4px; }
+.heatmap { grid-auto-flow: column; grid-auto-columns: 18px; }
+.heat-labels { color: var(--dim); font-size: 11px; line-height: 18px; }
+.cell { border-radius: 4px; background: #24243a; }
+.cell.l1 { background: #3b2f4f; } .cell.l2 { background: #7a3b5c; }
+.cell.l3 { background: #c0485f; } .cell.l4 { background: #ff6b6b; }
+.cell.today { outline: 2px solid var(--gold); outline-offset: 1px; }
+.legend { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--dim); font-size: 12px; margin: 10px 0 4px; }
+.legend .cell { width: 12px; height: 12px; display: inline-block; }
+
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.settings label { display: flex; flex-direction: column; gap: 6px; color: var(--dim); font-size: 14px; }
+.settings label.check { flex-direction: row; align-items: center; gap: 8px; align-self: end; padding-bottom: 8px; }
+.data-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+footer { text-align: center; color: #6c6c88; font-size: 13px; margin-top: 24px; }
+
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: #2e2e48; color: var(--text); padding: 12px 18px; border-radius: 12px; max-width: 90vw;
+  text-align: center; box-shadow: 0 8px 30px #0008; transition: .25s; z-index: 10;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>درس<span>یار</span></h1>
+    <div class="date" id="todayDate"></div>
+  </header>
+
+  <main class="grid">
+    <section class="card timer-card">
+      <div class="mode" id="modeLabel">تمرکز</div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="ring-bg" cx="100" cy="100" r="88"></circle>
+          <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="88"></circle>
+        </svg>
+        <div class="ring-text">
+          <div id="timeText">۰۰:۰۰</div>
+          <div id="subjectText" class="dim"></div>
+        </div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <form class="add-row" id="addForm" autocomplete="off">
+        <input type="text" id="subjectInput" maxlength="30" placeholder="درس جدید، مثلاً ریاضی">
+        <button class="btn" type="submit">افزودن</button>
+      </form>
+      <div class="buttons">
+        <button class="btn primary" id="startBtn" type="button">شروع</button>
+        <button class="btn" id="resetBtn" type="button">از نو</button>
+        <button class="btn" id="skipBtn" type="button">رد کردن</button>
+      </div>
+      <p class="hint">کلید Space برای شروع و توقف</p>
+    </section>
+
+    <section class="card">
+      <h2>امروز</h2>
+      <div class="big" id="todayTotal">۰ دقیقه</div>
+      <div class="bar"><div id="goalBar"></div></div>
+      <div class="dim" id="goalText"></div>
+      <div class="stats">
+        <div class="stat"><b id="streakVal">۰</b><span>🔥 روز پشت سر هم</span></div>
+        <div class="stat"><b id="sessionsVal">۰</b><span>جلسه‌ی امروز</span></div>
+        <div class="stat"><b id="bestVal">۰</b><span>🏆 بهترین رکورد</span></div>
+      </div>
+      <h2 class="mt">۷ روز اخیر به تفکیک درس</h2>
+      <div id="weekBars"></div>
+    </section>
+
+    <section class="card span2">
+      <h2>۱۲ هفته‌ی اخیر</h2>
+      <div class="heat-wrap">
+        <div class="heat-labels"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+      <div class="legend">کم <span class="cell"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span><span class="cell l4"></span> زیاد (نسبت به هدف روزانه)</div>
+      <div class="dim" id="totalAll"></div>
+    </section>
+
+    <section class="card span2">
+      <h2>تنظیمات و داده‌ها</h2>
+      <div class="settings">
+        <label>طول هر جلسه (دقیقه)<input type="number" id="focusInput" min="1" max="180"></label>
+        <label>استراحت (دقیقه)<input type="number" id="breakInput" min="0" max="60"></label>
+        <label>هدف روزانه (ساعت)<input type="number" id="goalInput" min="0.5" max="16" step="0.5"></label>
+        <label class="check"><input type="checkbox" id="soundInput"> صدای پایان جلسه</label>
+      </div>
+      <div class="data-buttons">
+        <button class="btn primary" id="shareBtn" type="button">📸 کارت پیشرفت امروز</button>
+        <button class="btn" id="exportBtn" type="button">پشتیبان‌گیری</button>
+        <button class="btn" id="importBtn" type="button">بازیابی پشتیبان</button>
+        <button class="btn danger" id="resetAllBtn" type="button">پاک کردن همه‌چیز</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+    </section>
+  </main>
+
+  <footer>همه‌ی داده‌ها فقط در مرورگر خودت ذخیره می‌شوند — بدون ثبت‌نام، بدون سرور.</footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------ constants */
+const STORE_KEY = "darsyar.v1";
+const COLORS = ["#ff6b6b", "#4ade80", "#60a5fa", "#fbbf24", "#c084fc", "#f472b6", "#2dd4bf", "#fb923c", "#a3e635", "#e879f9"];
+const LEVEL_COLORS = ["#24243a", "#3b2f4f", "#7a3b5c", "#c0485f", "#ff6b6b"];
+const WEEKS = 12;
+const CIRC = 2 * Math.PI * 88;
+
+/* -------------------------------------------------------------- helpers */
+const $ = (id) => document.getElementById(id);
+const fa = (v) => String(v).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+
+function dayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function parseDay(k) {
+  const [y, m, d] = k.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function addDays(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+function makeFmt(opts) {
+  try { return new Intl.DateTimeFormat("fa-IR-u-ca-persian", opts); }
+  catch { return new Intl.DateTimeFormat("fa-IR", opts); }
+}
+const FMT_LONG = makeFmt({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const FMT_SHORT = makeFmt({ weekday: "short", day: "numeric", month: "long" });
+const jalaliLong = (d) => FMT_LONG.format(d);
+const jalaliShort = (d) => FMT_SHORT.format(d);
+
+function fmtDuration(min) {
+  min = Math.round(min);
+  const h = Math.floor(min / 60), m = min % 60;
+  if (!h) return `${fa(m)} دقیقه`;
+  return m ? `${fa(h)} ساعت و ${fa(m)} دقیقه` : `${fa(h)} ساعت`;
+}
+function fmtClock(ms) {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60), s = total % 60;
+  return fa(`${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+}
+function clampInt(v, lo, hi, dflt) {
+  if (v === "" || v === null || v === undefined) return dflt;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
+}
+function newId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+let toastTimer = 0;
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+/* ---------------------------------------------------------------- state */
+function durationMs(st, mode) {
+  return (mode === "focus" ? st.settings.focus : st.settings.brk) * 60000;
+}
+
+function defaultState() {
+  return {
+    version: 1,
+    settings: { focus: 50, brk: 10, goal: 240, sound: true },
+    subjects: [],
+    sessions: [],
+    timer: { mode: "focus", running: false, endAt: 0, remaining: 50 * 60000, planned: 50, subjectId: null },
+  };
+}
+
+/* Accept only well-formed data, so a corrupted or edited backup can't break the app. */
+function sanitize(d) {
+  const s = defaultState();
+  if (!d || typeof d !== "object") return s;
+  const st = d.settings || {};
+  s.settings.focus = clampInt(st.focus, 1, 180, 50);
+  s.settings.brk = clampInt(st.brk, 0, 60, 10);
+  s.settings.goal = clampInt(st.goal, 30, 960, 240);
+  s.settings.sound = st.sound !== false;
+  if (Array.isArray(d.subjects)) {
+    s.subjects = d.subjects
+      .filter((x) => x && typeof x.id === "string" && typeof x.name === "string" && x.name.trim())
+      .slice(0, 20)
+      .map((x, i) => ({
+        id: x.id,
+        name: x.name.trim().slice(0, 30),
+        color: /^#[0-9a-f]{6}$/i.test(x.color) ? x.color : COLORS[i % COLORS.length],
+      }));
+  }
+  if (Array.isArray(d.sessions)) {
+    s.sessions = d.sessions
+      .filter((x) => x && /^\d{4}-\d{2}-\d{2}$/.test(x.day) && Number.isFinite(x.minutes) && x.minutes > 0 && x.minutes <= 600)
+      .map((x) => ({
+        day: x.day,
+        subjectId: typeof x.subjectId === "string" ? x.subjectId : null,
+        minutes: Math.round(x.minutes),
+        at: Number(x.at) || 0,
+      }));
+  }
+  const t = d.timer || {};
+  s.timer.mode = t.mode === "break" ? "break" : "focus";
+  s.timer.running = t.running === true && Number.isFinite(t.endAt) && t.endAt > 0;
+  s.timer.endAt = s.timer.running ? t.endAt : 0;
+  s.timer.planned = clampInt(t.planned, 1, 180, s.settings.focus);
+  s.timer.remaining = Number.isFinite(t.remaining) && t.remaining >= 0 ? t.remaining : durationMs(s, s.timer.mode);
+  s.timer.subjectId = s.subjects.some((x) => x.id === t.subjectId) ? t.subjectId : (s.subjects[0] ? s.subjects[0].id : null);
+  return s;
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? sanitize(JSON.parse(raw)) : defaultState();
+  } catch {
+    return defaultState();
+  }
+}
+
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch { toast("ذخیره‌سازی ممکن نشد — حافظه‌ی مرورگر پر یا غیرفعال است."); }
+}
+
+let state = load();
+
+/* ---------------------------------------------------------------- stats */
+function minutesByDay() {
+  const m = new Map();
+  for (const s of state.sessions) m.set(s.day, (m.get(s.day) || 0) + s.minutes);
+  return m;
+}
+function streak(byDay) {
+  let d = new Date(), n = 0;
+  if (!byDay.get(dayKey(d))) d = addDays(d, -1);   // today not started yet: count up to yesterday
+  while (byDay.get(dayKey(d))) { n++; d = addDays(d, -1); }
+  return n;
+}
+function bestStreak(byDay) {
+  let best = 0, cur = 0, prev = null;
+  for (const k of [...byDay.keys()].sort()) {
+    cur = prev && dayKey(addDays(prev, 1)) === k ? cur + 1 : 1;
+    best = Math.max(best, cur);
+    prev = parseDay(k);
+  }
+  return best;
+}
+function heatDays(byDay) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let d = addDays(today, -(WEEKS * 7 - 1));
+  d = addDays(d, -((d.getDay() + 1) % 7));          // back to Saturday
+  const goal = state.settings.goal, out = [];
+  for (; d <= today; d = addDays(d, 1)) {
+    const mins = byDay.get(dayKey(d)) || 0;
+    const level = !mins ? 0 : mins < goal * 0.25 ? 1 : mins < goal * 0.5 ? 2 : mins < goal ? 3 : 4;
+    out.push({ date: d, mins, level });
+  }
+  return out;
+}
+function subjectName(id) {
+  const s = state.subjects.find((x) => x.id === id);
+  return s ? s.name : "درس حذف‌شده";
+}
+
+/* ---------------------------------------------------------------- sound */
+let audioCtx = null;
+function unlockAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!audioCtx && AC) audioCtx = new AC();
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+function chime() {
+  if (!state.settings.sound || !audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  [880, 1108.73, 1318.51].forEach((f, i) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    const s = t0 + i * 0.18;
+    o.type = "sine";
+    o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, s);
+    g.gain.exponentialRampToValueAtTime(0.3, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, s + 0.9);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(s);
+    o.stop(s + 1);
+  });
+}
+function askNotify() {
+  if ("Notification" in window && Notification.permission === "default") {
+    const p = Notification.requestPermission();
+    if (p && p.catch) p.catch(() => {});
+  }
+}
+function notify(title, body) {
+  toast(`${title} — ${body}`);
+  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+    try { new Notification(title, { body }); } catch { /* not supported here */ }
+  }
+}
+
+/* ---------------------------------------------------------------- timer */
+function remainingMs() {
+  const t = state.timer;
+  return t.running ? Math.max(0, t.endAt - Date.now()) : t.remaining;
+}
+
+function setMode(mode, autoStart) {
+  const t = state.timer;
+  if (mode === "break" && state.settings.brk === 0) mode = "focus";
+  t.mode = mode;
+  t.remaining = durationMs(state, mode);
+  if (mode === "focus") t.planned = state.settings.focus;
+  t.running = autoStart;
+  t.endAt = autoStart ? Date.now() + t.remaining : 0;
+  save();
+  render();
+}
+
+function start() {
+  const t = state.timer;
+  if (t.running) return;
+  if (t.mode === "focus") {
+    if (!state.subjects.length) {
+      toast("اول یک درس اضافه کن 👇");
+      $("subjectInput").focus();
+      return;
+    }
+    if (!state.subjects.some((s) => s.id === t.subjectId)) t.subjectId = state.subjects[0].id;
+    if (t.remaining === durationMs(state, "focus")) t.planned = state.settings.focus;
+  }
+  unlockAudio();
+  askNotify();
+  t.endAt = Date.now() + t.remaining;
+  t.running = true;
+  save();
+  render();
+}
+
+function pause() {
+  const t = state.timer;
+  if (!t.running) return;
+  t.remaining = Math.max(0, t.endAt - Date.now());
+  t.running = false;
+  save();
+  render();
+}
+
+function toggle() { state.timer.running ? pause() : start(); }
+function resetTimer() { setMode(state.timer.mode, false); }
+function skip() { setMode(state.timer.mode === "focus" ? "break" : "focus", false); }
+
+/* silent = the timer ran out while the page was closed */
+function complete(silent) {
+  const t = state.timer;
+  if (t.mode === "focus") {
+    const goal = state.settings.goal;
+    const day = dayKey(new Date(t.endAt));
+    const before = minutesByDay().get(day) || 0;
+    state.sessions.push({ day, subjectId: t.subjectId, minutes: t.planned, at: t.endAt });
+    if (!silent) {
+      chime();
+      if (before < goal && before + t.planned >= goal) {
+        notify("🎯 هدف امروز کامل شد!", `${fmtDuration(before + t.planned)} مطالعه — عالی بود!`);
+      } else {
+        notify("جلسه تمام شد 🎉", `${fmtDuration(t.planned)} ${subjectName(t.subjectId)} ثبت شد. وقت استراحت!`);
+      }
+    }
+    setMode("break", !silent);
+  } else {
+    if (!silent) {
+      chime();
+      notify("استراحت تمام شد", "آماده‌ی جلسه‌ی بعدی هستی؟");
+    }
+    setMode("focus", false);
+  }
+}
+
+/* ------------------------------------------------------------- subjects */
+function addSubject(raw) {
+  const name = raw.trim().replace(/\s+/g, " ");
+  if (!name) return;
+  if (name.length > 30) return toast("نام درس حداکثر ۳۰ حرف باشد.");
+  if (state.subjects.some((s) => s.name === name)) return toast("این درس قبلاً اضافه شده.");
+  if (state.subjects.length >= 20) return toast("حداکثر ۲۰ درس می‌توانی داشته باشی.");
+  const used = new Set(state.subjects.map((s) => s.color));
+  const color = COLORS.find((c) => !used.has(c)) || COLORS[state.subjects.length % COLORS.length];
+  const id = newId();
+  state.subjects.push({ id, name, color });
+  if (!state.timer.subjectId) state.timer.subjectId = id;
+  save();
+  render();
+}
+
+function removeSubject(id) {
+  const s = state.subjects.find((x) => x.id === id);
+  if (!s) return;
+  if (!confirm(`درس «${s.name}» حذف شود؟\nجلسه‌های قبلی‌اش در آمار باقی می‌مانند.`)) return;
+  state.subjects = state.subjects.filter((x) => x.id !== id);
+  if (state.timer.subjectId === id) state.timer.subjectId = state.subjects[0] ? state.subjects[0].id : null;
+  save();
+  render();
+}
+
+/* ------------------------------------------------------------ rendering */
+function renderSubjects() {
+  const box = $("chips");
+  box.textContent = "";
+  if (!state.subjects.length) {
+    const p = document.createElement("div");
+    p.className = "dim";
+    p.textContent = "برای شروع، درس‌هایت را اضافه کن 👇";
+    box.appendChild(p);
+    return;
+  }
+  const locked = state.timer.running;
+  for (const s of state.subjects) {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (s.id === state.timer.subjectId ? " active" : "");
+
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "pick";
+    pick.disabled = locked;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = s.color;
+    const name = document.createElement("span");
+    name.textContent = s.name;
+    pick.append(dot, name);
+    pick.addEventListener("click", () => { state.timer.subjectId = s.id; save(); render(); });
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "del";
+    del.textContent = "×";
+    del.title = "حذف درس";
+    del.setAttribute("aria-label", `حذف ${s.name}`);
+    del.disabled = locked;
+    del.addEventListener("click", () => removeSubject(s.id));
+
+    chip.append(pick, del);
+    box.appendChild(chip);
+  }
+}
+
+function renderTimer() {
+  const t = state.timer;
+  const rem = remainingMs();
+  const full = t.mode === "focus" ? t.planned * 60000 : Math.max(1, state.settings.brk * 60000);
+  const frac = Math.min(1, Math.max(0, rem / full));
+  const ring = $("ringFg");
+  ring.style.strokeDasharray = CIRC;
+  ring.style.strokeDashoffset = CIRC * (1 - frac);
+  ring.classList.toggle("break", t.mode === "break");
+
+  const label = t.mode === "focus" ? "تمرکز" : "استراحت";
+  $("modeLabel").textContent = label;
+  $("modeLabel").classList.toggle("break", t.mode === "break");
+
+  const clock = fmtClock(rem);
+  $("timeText").textContent = clock;
+  $("subjectText").textContent = t.mode === "focus"
+    ? (t.subjectId ? subjectName(t.subjectId) : "")
+    : "نفسی تازه کن ☕";
+
+  const fresh = !t.running && rem >= full;
+  $("startBtn").textContent = t.running ? "توقف" : (fresh ? "شروع" : "ادامه");
+  document.title = t.running ? `${clock} · ${label} — درسیار` : "درسیار";
+}
+
+function renderHeatmap(byDay) {
+  const grid = $("heatmap");
+  grid.textContent = "";
+  const days = heatDays(byDay);
+  days.forEach((x, i) => {
+    const cell = document.createElement("div");
+    cell.className = `cell l${x.level}` + (i === days.length - 1 ? " today" : "");
+    cell.title = `${jalaliShort(x.date)}: ${x.mins ? fmtDuration(x.mins) : "بدون مطالعه"}`;
+    grid.appendChild(cell);
+  });
+}
+
+function renderWeek() {
+  const box = $("weekBars");
+  box.textContent = "";
+  const from = dayKey(addDays(new Date(), -6));
+  const per = new Map();
+  for (const s of state.sessions) {
+    if (s.day >= from) per.set(s.subjectId, (per.get(s.subjectId) || 0) + s.minutes);
+  }
+  if (!per.size) {
+    box.className = "dim";
+    box.textContent = "هنوز جلسه‌ای در ۷ روز اخیر ثبت نشده.";
+    return;
+  }
+  box.className = "";
+  const max = Math.max(...per.values());
+  [...per.entries()].sort((a, b) => b[1] - a[1]).forEach(([id, mins]) => {
+    const subj = state.subjects.find((x) => x.id === id);
+    const row = document.createElement("div");
+    row.className = "wk-row";
+    const name = document.createElement("div");
+    name.className = "wk-name";
+    name.textContent = subj ? subj.name : "درس حذف‌شده";
+    const track = document.createElement("div");
+    track.className = "wk-track";
+    const bar = document.createElement("div");
+    bar.className = "wk-bar";
+    bar.style.width = (mins / max) * 100 + "%";
+    bar.style.background = subj ? subj.color : "#6c6c88";
+    track.appendChild(bar);
+    const val = document.createElement("div");
+    val.className = "wk-val";
+    val.textContent = fmtDuration(mins);
+    row.append(name, track, val);
+    box.appendChild(row);
+  });
+}
+
+function renderStats() {
+  const byDay = minutesByDay();
+  const today = dayKey();
+  const todayMin = byDay.get(today) || 0;
+  const goal = state.settings.goal;
+  $("todayTotal").textContent = fmtDuration(todayMin);
+  $("goalBar").style.width = Math.min(100, (todayMin / goal) * 100) + "%";
+  $("goalText").textContent = todayMin >= goal
+    ? `🎯 هدف امروز (${fmtDuration(goal)}) کامل شد!`
+    : `${fmtDuration(goal - todayMin)} مانده تا هدف امروز (${fmtDuration(goal)})`;
+  $("streakVal").textContent = fa(streak(byDay));
+  $("sessionsVal").textContent = fa(state.sessions.filter((s) => s.day === today).length);
+  $("bestVal").textContent = fa(bestStreak(byDay));
+  const total = state.sessions.reduce((a, s) => a + s.minutes, 0);
+  $("totalAll").textContent = total ? `مجموع کل: ${fmtDuration(total)} در ${fa(state.sessions.length)} جلسه` : "";
+  renderHeatmap(byDay);
+  renderWeek();
+}
+
+function renderSettings() {
+  $("focusInput").value = state.settings.focus;
+  $("breakInput").value = state.settings.brk;
+  $("goalInput").value = Math.round(state.settings.goal / 6) / 10;
+  $("soundInput").checked = state.settings.sound;
+}
+
+function render() {
+  $("todayDate").textContent = jalaliLong(new Date());
+  renderSubjects();
+  renderTimer();
+  renderStats();
+}
+
+/* ------------------------------------------------------------- settings */
+function updateSetting(key, value) {
+  const t = state.timer;
+  const wasFresh = !t.running && t.remaining === durationMs(state, t.mode);
+  state.settings[key] = value;
+  if (wasFresh) {
+    t.remaining = durationMs(state, t.mode);
+    if (t.mode === "focus") t.planned = state.settings.focus;
+  }
+  save();
+  renderSettings();
+  render();
+}
+
+function onNumber(id, key, lo, hi, scale = 1) {
+  $(id).addEventListener("change", (e) => {
+    const raw = e.target.value.trim();
+    const n = Number(raw) * scale;
+    if (raw === "" || !Number.isFinite(n)) { renderSettings(); return; }
+    updateSetting(key, Math.min(hi, Math.max(lo, Math.round(n))));
+  });
+}
+
+/* --------------------------------------------------------- share card */
+function roundRect(g, x, y, w, h, r, color) {
+  r = Math.min(r, w / 2, h / 2);
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+  g.fillStyle = color;
+  g.fill();
+}
+
+function drawCard() {
+  const byDay = minutesByDay();
+  const todayMin = byDay.get(dayKey()) || 0;
+  const goal = state.settings.goal;
+  const W = 1080, H = 1350, R = 980;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const g = c.getContext("2d");
+  const font = (w, s) => `${w} ${s}px Vazirmatn, Vazir, Tahoma, sans-serif`;
+
+  const bg = g.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#2a1f3d");
+  bg.addColorStop(1, "#12121c");
+  g.fillStyle = bg;
+  g.fillRect(0, 0, W, H);
+  g.direction = "rtl";
+  g.textAlign = "right";
+
+  g.fillStyle = "#ff6b6b"; g.font = font(800, 84); g.fillText("درسیار", R, 150);
+  g.fillStyle = "#9a9ab5"; g.font = font(400, 40); g.fillText(jalaliLong(new Date()), R, 215);
+
+  g.fillStyle = "#9a9ab5"; g.font = font(400, 44); g.fillText("مطالعه‌ی امروز", R, 330);
+  g.fillStyle = "#f2f2f7"; g.font = font(800, 104); g.fillText(fmtDuration(todayMin), R, 450);
+
+  const pct = Math.min(1, todayMin / goal);
+  roundRect(g, 100, 490, 880, 28, 14, "#24243a");
+  if (pct > 0) roundRect(g, 100 + 880 * (1 - pct), 490, 880 * pct, 28, 14, "#ff6b6b");
+  g.fillStyle = "#9a9ab5"; g.font = font(400, 34);
+  g.fillText(todayMin >= goal ? "هدف امروز کامل شد!" : `هدف روزانه: ${fmtDuration(goal)}`, R, 575);
+
+  const sessionsToday = state.sessions.filter((s) => s.day === dayKey()).length;
+  const stats = [["روز پشت سر هم", fa(streak(byDay))], ["جلسه‌ی امروز", fa(sessionsToday)], ["بهترین رکورد", fa(bestStreak(byDay))]];
+  g.textAlign = "center";
+  stats.forEach(([label, val], i) => {
+    const x = R - (i + 1) * 270 - i * 35;
+    roundRect(g, x, 620, 270, 170, 28, "#24243a");
+    g.fillStyle = "#f2f2f7"; g.font = font(800, 72); g.fillText(val, x + 135, 715);
+    g.fillStyle = "#9a9ab5"; g.font = font(400, 30); g.fillText(label, x + 135, 762);
+  });
+
+  g.textAlign = "right";
+  g.fillStyle = "#9a9ab5"; g.font = font(400, 34); g.fillText("۱۲ هفته‌ی اخیر", R, 870);
+  const days = heatDays(byDay);
+  const cols = Math.ceil(days.length / 7), step = 45, size = 36;
+  const right = 540 + (cols * step - (step - size)) / 2;
+  days.forEach((x, i) => {
+    const col = Math.floor(i / 7), row = i % 7;
+    roundRect(g, right - col * step - size, 900 + row * step, size, size, 8, LEVEL_COLORS[x.level]);
+  });
+
+  g.textAlign = "center";
+  g.fillStyle = "#6c6c88"; g.font = font(400, 30); g.fillText("ساخته‌شده با درسیار", W / 2, 1290);
+  return c;
+}
+
+function shareCard() {
+  drawCard().toBlob(async (blob) => {
+    if (!blob) return toast("ساخت تصویر ممکن نشد.");
+    const name = `darsyar-${dayKey()}.png`;
+    const file = new File([blob], name, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "درسیار" });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    download(blob, name);
+    toast("کارت پیشرفت دانلود شد 📸");
+  }, "image/png");
+}
+
+/* --------------------------------------------------------------- data */
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  download(blob, `darsyar-backup-${dayKey()}.json`);
+  toast("فایل پشتیبان دانلود شد.");
+}
+
+async function importData(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || !Array.isArray(data.sessions) || !Array.isArray(data.subjects)) throw new Error("bad file");
+    if (!confirm(`بازیابی ${fa(data.sessions.length)} جلسه و ${fa(data.subjects.length)} درس؟\nداده‌های فعلی جایگزین می‌شوند.`)) return;
+    state = sanitize(data);
+    state.timer.running = false;
+    state.timer.endAt = 0;
+    state.timer.remaining = durationMs(state, state.timer.mode);
+    save();
+    renderSettings();
+    render();
+    toast("پشتیبان بازیابی شد ✅");
+  } catch {
+    toast("این فایل، پشتیبان درسیار نیست.");
+  }
+}
+
+function resetAll() {
+  if (!confirm("همه‌ی درس‌ها، جلسه‌ها و تنظیمات پاک شود؟\nاین کار برگشت‌پذیر نیست.")) return;
+  state = defaultState();
+  save();
+  renderSettings();
+  render();
+  toast("همه‌چیز پاک شد.");
+}
+
+/* --------------------------------------------------------------- wiring */
+$("startBtn").addEventListener("click", toggle);
+$("resetBtn").addEventListener("click", resetTimer);
+$("skipBtn").addEventListener("click", skip);
+$("addForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  addSubject($("subjectInput").value);
+  $("subjectInput").value = "";
+});
+onNumber("focusInput", "focus", 1, 180);
+onNumber("breakInput", "brk", 0, 60);
+onNumber("goalInput", "goal", 30, 960, 60);
+$("soundInput").addEventListener("change", (e) => updateSetting("sound", e.target.checked));
+$("shareBtn").addEventListener("click", shareCard);
+$("exportBtn").addEventListener("click", exportData);
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (file) importData(file);
+});
+$("resetAllBtn").addEventListener("click", resetAll);
+
+document.addEventListener("keydown", (e) => {
+  const tag = document.activeElement ? document.activeElement.tagName : "";
+  if (e.code === "Space" && !["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(tag)) {
+    e.preventDefault();
+    toggle();
+  }
+});
+
+/* keep several open tabs in sync */
+window.addEventListener("storage", (e) => {
+  if (e.key === STORE_KEY) {
+    state = load();
+    renderSettings();
+    render();
+  }
+});
+
+let lastDay = dayKey();
+function tick() {
+  const t = state.timer;
+  if (t.running && Date.now() >= t.endAt) complete(false);
+  if (dayKey() !== lastDay) {
+    lastDay = dayKey();
+    render();
+  }
+  renderTimer();
+}
+document.addEventListener("visibilitychange", tick);
+
+if (state.timer.running && Date.now() >= state.timer.endAt) complete(true);
+renderSettings();
+render();
+setInterval(tick, 250);
+</script>
+</body>
+</html>
