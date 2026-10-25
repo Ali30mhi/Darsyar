@@ -5,7 +5,7 @@
 Focus timer · daily goal · streaks · 12-week heatmap · shareable progress card.
 No sign-up, no server, no install — your data never leaves your browser.
 
-**▶ Use it now: https://ali30mhi.github.io/darsyar/**
+**▶ Use it now: https://ali30mhi.github.io/Darsyar/**
 
 ## Features
 
@@ -33,7 +33,7 @@ Just open `index.html` in any modern browser.
 ## Host it for free
 
 Settings → Pages → *Deploy from a branch* → `main` / `(root)` → Save.
-Your app will be live at `https://<username>.github.io/darsyar/`.
+Your app will be live at `https://<username>.github.io/Darsyar/`.
 
 ## Keyboard
 
